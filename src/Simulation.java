@@ -6,8 +6,8 @@ public class Simulation {
 
     public Simulation() {
         celestialBodies = new ArrayList<>();
-        celestialBodies.add(new CelestialBody(0, 0, 0, 0, 1000, 30));
-        celestialBodies.add(new CelestialBody(100, 0, 0, 3, 10, 8));
+        celestialBodies.add(new CelestialBody(400, 400, 0, 0, 1000, 30));
+        celestialBodies.add(new CelestialBody(500, 400, 0, 3, 10, 8));
     }
 
     public ArrayList<CelestialBody> getCelestialBodies() {
@@ -26,6 +26,7 @@ public class Simulation {
 
         double directionX = distanceX / totalDistance;
         double directionY = distanceY / totalDistance;
+
         double forceOfGravity = (G * sun.mass * planet.mass) / Math.pow(totalDistance, 2);
 
         double accx = directionX * forceOfGravity / planet.mass;
