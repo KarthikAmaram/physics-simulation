@@ -8,6 +8,7 @@ public class Simulation {
         celestialBodies = new ArrayList<>();
         celestialBodies.add(new CelestialBody(400, 400, 0, 0, 1000, 30));
         celestialBodies.add(new CelestialBody(500, 400, 0, 3, 10, 8));
+        celestialBodies.add(new CelestialBody(325, 400, 0, 3, 10, 8));
     }
 
     public ArrayList<CelestialBody> getCelestialBodies() {
@@ -15,28 +16,41 @@ public class Simulation {
     }
 
     public void updatePositions() {
-        CelestialBody sun = celestialBodies.get(0);
-        CelestialBody planet = celestialBodies.get(1);
+
         double dt = 1.0 / 60;
-        double distanceX = sun.x - planet.x;
-        double distanceY = sun.y - planet.y;
-        double totalDistance = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2));
+        for (CelestialBody body : celestialBodies) {
+            double totalAccX = 0;
+            double totalAccY = 0;
 
-        if (totalDistance == 0) return;
+            for (CelestialBody otherBody : celestialBodies) {
+                if (otherBody != body) {
+                    double distanceX = otherBody.x - body.x;
+                    double distanceY = otherBody.y - body.y;
+                    double totalDistance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
 
-        double directionX = distanceX / totalDistance;
-        double directionY = distanceY / totalDistance;
+                    double directionX = distanceX / totalDistance;
+                    double directionY = distanceY / totalDistance;
 
-        double forceOfGravity = (G * sun.mass * planet.mass) / Math.pow(totalDistance, 2);
+                    double forceOfGravity = (G * otherBody.mass * body.mass) / (totalDistance * totalDistance);
 
-        double accx = directionX * forceOfGravity / planet.mass;
-        double accy = directionY * forceOfGravity / planet.mass;
+                    double accx = directionX * forceOfGravity / body.mass;
+                    double accy = directionY * forceOfGravity / body.mass;
 
-        planet.vx += accx * dt;
-        planet.vy += accy * dt;
+                    totalAccX += accx;
+                    totalAccY += accy;
+                }
+            }
 
-        planet.x += planet.vx * dt;
-        planet.y += planet.vy * dt;
+            body.vx += totalAccX * dt;
+            body.vy += totalAccY * dt;
+
+        }
+
+        for (CelestialBody body : celestialBodies) {
+            body.x += body.vx * dt;
+            body.y += body.vy * dt;
+        }
+        
 
     }
     public void start() {
