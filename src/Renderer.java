@@ -18,7 +18,8 @@ public class Renderer extends JPanel {
         super.paintComponent(g);
         for (CelestialBody body : sim.getCelestialBodies())
         {
-            g.fillOval((int) (body.x - body.radius), (int) (body.y - body.radius), (int) body.radius, (int) body.radius);
+            g.fillOval((int) (body.x - body.radius), (int) (body.y - body.radius), (int) (body.radius * 2),
+                    (int) (body.radius * 2));
         }
 
     }

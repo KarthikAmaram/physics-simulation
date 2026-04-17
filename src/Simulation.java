@@ -50,7 +50,7 @@ public class Simulation {
             body.x += body.vx * dt;
             body.y += body.vy * dt;
         }
-        
+
 
     }
     public void start() {
