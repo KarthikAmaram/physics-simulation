@@ -4,7 +4,6 @@ import java.awt.*;
 public class Main {
     public static void main(String[] args) {
         Simulation physics = new Simulation();
-        // physics.start();
         Renderer drawer = new Renderer(physics);
 
 

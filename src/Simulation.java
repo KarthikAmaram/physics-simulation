@@ -1,14 +1,15 @@
 import java.util.ArrayList;
 
 public class Simulation {
-    private static final double G = 1; // for now because scale is small
+    private static final double G = 5;
     private final ArrayList<CelestialBody> celestialBodies;
+    public static final int MASS_OF_SUN = 1000;
 
     public Simulation() {
         celestialBodies = new ArrayList<>();
-        celestialBodies.add(new CelestialBody(400, 400, 0, 0, 1000, 30));
-        celestialBodies.add(new CelestialBody(500, 400, 0, 3, 10, 8));
-        celestialBodies.add(new CelestialBody(325, 400, 0, 3, 10, 8));
+        celestialBodies.add(new CelestialBody(400, 400, 0, 0, MASS_OF_SUN, 30));
+        celestialBodies.add(new CelestialBody(500, 400, 0, 7.07, 10, 8));
+        celestialBodies.add(new CelestialBody(300, 400, 0, -8.16, 10, 8));
     }
 
     public ArrayList<CelestialBody> getCelestialBodies() {
@@ -16,44 +17,75 @@ public class Simulation {
     }
 
     public void updatePositions() {
-
         double dt = 1.0 / 60;
+
         for (CelestialBody body : celestialBodies) {
             double totalAccX = 0;
             double totalAccY = 0;
 
             for (CelestialBody otherBody : celestialBodies) {
                 if (otherBody != body) {
-                    double distanceX = otherBody.x - body.x;
-                    double distanceY = otherBody.y - body.y;
-                    double totalDistance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                    double dx = otherBody.x - body.x;
+                    double dy = otherBody.y - body.y;
+                    double distSq = dx * dx + dy * dy;
+                    double dist = Math.sqrt(distSq);
 
-                    double directionX = distanceX / totalDistance;
-                    double directionY = distanceY / totalDistance;
+                    if (dist < 1) continue;
 
-                    double forceOfGravity = (G * otherBody.mass * body.mass) / (totalDistance * totalDistance);
+                    double force = (G * otherBody.mass) / distSq;
 
-                    double accx = directionX * forceOfGravity / body.mass;
-                    double accy = directionY * forceOfGravity / body.mass;
-
-                    totalAccX += accx;
-                    totalAccY += accy;
+                    totalAccX += (dx / dist) * force;
+                    totalAccY += (dy / dist) * force;
                 }
             }
 
             body.vx += totalAccX * dt;
             body.vy += totalAccY * dt;
-
         }
 
         for (CelestialBody body : celestialBodies) {
             body.x += body.vx * dt;
             body.y += body.vy * dt;
         }
-
-
     }
-    public void start() {
-        System.out.println("Yo first line");
+
+    public void addPlanet(int height, int width) {
+        boolean valid = false;
+        mainLoop:
+        while (!valid) {
+            int randR = (int) (Math.random() * 6) + 5;
+            int randX = (int) (Math.random() * (width - 2 * randR)) + randR;
+            int randY = (int) (Math.random() * (height - 2 * randR)) + randR;
+
+            for (CelestialBody body : celestialBodies) {
+                double dx = body.x - randX;
+                double dy = body.y - randY;
+                double distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < (body.radius + randR + 15)) {
+                    continue mainLoop;
+                }
+            }
+
+            valid = true;
+
+            double dx = randX - 400;
+            double dy = randY - 400;
+            double r = Math.sqrt(dx * dx + dy * dy);
+
+            double speed = Math.sqrt((G * MASS_OF_SUN) / r);
+            speed *= (0.8 + Math.random() * 0.4);
+
+            double vx = (-dy / r) * speed;
+            double vy = (dx / r) * speed;
+
+            if (Math.random() < 0.5) {
+                vx *= -1;
+                vy *= -1;
+            }
+
+            double randMass = Math.random() * 5 + 5;
+            celestialBodies.add(new CelestialBody(randX, randY, vx, vy, randMass, randR));
+        }
     }
 }

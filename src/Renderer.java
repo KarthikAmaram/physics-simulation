@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import javax.swing.*;
 
 public class Renderer extends JPanel {
@@ -20,6 +21,7 @@ public class Renderer extends JPanel {
 
         this.add(buttonContainer, BorderLayout.SOUTH);
 
+        addPlanetButton.addActionListener(this::addPlanet);
 
         new Timer(16, e -> {
             sim.updatePositions();
@@ -38,5 +40,8 @@ public class Renderer extends JPanel {
 
     }
 
+    private void addPlanet(ActionEvent e) {
+        sim.addPlanet(getHeight(), getWidth());
+    }
 
 }
