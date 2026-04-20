@@ -32,10 +32,22 @@ public class Renderer extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+
         for (CelestialBody body : sim.getCelestialBodies())
         {
+            Point lastPoint = null;
+            for (Point p : body.prevPoints) {
+                if (lastPoint != null) {
+                    g.drawLine(lastPoint.x, lastPoint.y, p.x, p.y);
+                    lastPoint = p;
+                }
+                else {
+                    lastPoint = p;
+                }
+            }
             g.fillOval((int) (body.x - body.radius), (int) (body.y - body.radius), (int) (body.radius * 2),
                     (int) (body.radius * 2));
+
         }
 
     }

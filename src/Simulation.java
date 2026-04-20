@@ -1,3 +1,4 @@
+import java.awt.*;
 import java.util.ArrayList;
 
 public class Simulation {
@@ -44,6 +45,7 @@ public class Simulation {
         }
 
         for (CelestialBody body : celestialBodies) {
+            body.prevPoints.add(new Point((int) body.x, (int) body.y));
             body.x += body.vx * dt;
             body.y += body.vy * dt;
         }

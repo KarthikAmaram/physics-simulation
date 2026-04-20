@@ -1,5 +1,9 @@
+import java.awt.*;
+import java.util.LinkedList;
+
 public class CelestialBody {
     public double x, y, vx, vy, mass, radius;
+    public LinkedList<Point> prevPoints = new LinkedList<>();
 
     public CelestialBody(double x, double y, double vx, double vy, double mass, double radius) {
         this.x = x;
