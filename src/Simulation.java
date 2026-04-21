@@ -5,6 +5,9 @@ public class Simulation {
     private static final double G = 5;
     private final ArrayList<CelestialBody> celestialBodies;
     public static final int MASS_OF_SUN = 1000;
+    private static final int MAX_LENGTH = 1000;
+
+    private int frameCount;
 
     public Simulation() {
         celestialBodies = new ArrayList<>();
@@ -19,7 +22,7 @@ public class Simulation {
 
     public void updatePositions() {
         double dt = 1.0 / 60;
-
+        frameCount++;
         for (CelestialBody body : celestialBodies) {
             double totalAccX = 0;
             double totalAccY = 0;
@@ -45,7 +48,13 @@ public class Simulation {
         }
 
         for (CelestialBody body : celestialBodies) {
-            body.prevPoints.add(new Point((int) body.x, (int) body.y));
+            if (frameCount % 5 == 0) {
+                body.prevPoints.add(new Point((int) body.x, (int) body.y));
+
+                if (body.prevPoints.size() > MAX_LENGTH) {
+                    body.prevPoints.poll();
+                }
+            }
             body.x += body.vx * dt;
             body.y += body.vy * dt;
         }
