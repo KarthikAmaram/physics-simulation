@@ -6,7 +6,7 @@ public class Simulation {
     private final ArrayList<CelestialBody> celestialBodies;
     public static final int MASS_OF_SUN = 1000;
     private static final int MAX_LENGTH = 1000;
-
+    private final ArrayList<CelestialBody> toRemove = new ArrayList<>();
     private int frameCount;
 
     public Simulation() {
@@ -45,6 +45,10 @@ public class Simulation {
 
             body.vx += totalAccX * dt;
             body.vy += totalAccY * dt;
+
+            if (Math.abs(body.x) > 2000 || Math.abs(body.y) > 2000) {
+                toRemove.add(body);
+            }
         }
 
         for (CelestialBody body : celestialBodies) {
@@ -58,6 +62,8 @@ public class Simulation {
             body.x += body.vx * dt;
             body.y += body.vy * dt;
         }
+
+        removeAll();
     }
     public void createPlanet(double x, double y, double vx, double vy, double mass, double radius) {
         celestialBodies.add(new CelestialBody(x, y, vx, vy, mass, radius));
@@ -100,5 +106,10 @@ public class Simulation {
             double randMass = Math.random() * 5 + 5;
             celestialBodies.add(new CelestialBody(randX, randY, vx, vy, randMass, randR));
         }
+    }
+
+    private void removeAll() {
+        celestialBodies.removeAll(toRemove);
+        toRemove.clear();
     }
 }
