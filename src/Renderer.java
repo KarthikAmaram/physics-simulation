@@ -95,7 +95,50 @@ public class Renderer extends JPanel {
             g.drawLine(startPoint.x, startPoint.y, currentPoint.x, currentPoint.y);
 
             g.drawOval(startPoint.x - 8, startPoint.y - 8, 8 * 2, 8 * 2);
-            g.setColor(Color.black);
+
+            double ghostX = startPoint.x;
+            double ghostY = startPoint.y;
+
+            double ghostVX = (startPoint.x - currentPoint.x) * 0.1;
+            double ghostVY = (startPoint.y - currentPoint.y) * 0.1;
+
+            double dt = 1.0 / 60;
+
+            g.setColor(new Color(255, 120, 0, 180));;
+
+
+            for (int i = 0; i < 1000; i++) {
+                double totalAccX = 0;
+                double totalAccY = 0;
+
+                for (CelestialBody otherBody : sim.getCelestialBodies()) {
+                    double dx = otherBody.x - ghostX;
+                    double dy = otherBody.y - ghostY;
+                    double distSq = dx * dx + dy * dy;
+                    double dist = Math.sqrt(distSq);
+
+                    if (dist < 5) continue;
+
+                    double force =  (Simulation.G * otherBody.mass) / distSq;
+                    totalAccX += (dx / dist) * force;
+                    totalAccY += (dy / dist) * force;
+                }
+
+                ghostVX += totalAccX * dt;
+                ghostVY += totalAccY * dt;
+
+                double nextX = ghostX + ghostVX * dt;
+                double nextY = ghostY + ghostVY * dt;
+
+                g.drawLine((int)ghostX, (int)ghostY, (int)nextX, (int)nextY);
+
+                ghostX = nextX;
+                ghostY = nextY;
+
+                if (Math.sqrt(Math.pow(ghostX - 400, 2) + Math.pow(ghostY - 400, 2)) < 30) {
+                    break;
+                }
+            }
         }
 
     }

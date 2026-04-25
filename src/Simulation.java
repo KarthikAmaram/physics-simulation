@@ -2,18 +2,18 @@ import java.awt.*;
 import java.util.ArrayList;
 
 public class Simulation {
-    private static final double G = 5;
+    public static final double G = 5;
     private final ArrayList<CelestialBody> celestialBodies;
-    public static final int MASS_OF_SUN = 1000;
-    private static final int MAX_LENGTH = 1000;
+    public static final int MASS_OF_SUN = 50000;
+    private static final int MAX_LENGTH = 500;
     private final ArrayList<CelestialBody> toRemove = new ArrayList<>();
     private int frameCount;
 
     public Simulation() {
         celestialBodies = new ArrayList<>();
         celestialBodies.add(new CelestialBody(400, 400, 0, 0, MASS_OF_SUN, 30));
-        celestialBodies.add(new CelestialBody(500, 400, 0, 7.07, 10, 8));
-        celestialBodies.add(new CelestialBody(300, 400, 0, -8.16, 10, 8));
+        celestialBodies.add(new CelestialBody(500, 400, 0, 50, 10, 8));
+        celestialBodies.add(new CelestialBody(300, 400, 0, -58, 10, 8));
     }
 
     public ArrayList<CelestialBody> getCelestialBodies() {
@@ -65,6 +65,7 @@ public class Simulation {
 
         removeAll();
     }
+
     public void createPlanet(double x, double y, double vx, double vy, double mass, double radius) {
         celestialBodies.add(new CelestialBody(x, y, vx, vy, mass, radius));
     }
