@@ -59,7 +59,9 @@ public class Simulation {
             body.y += body.vy * dt;
         }
     }
-
+    public void createPlanet(double x, double y, double vx, double vy, double mass, double radius) {
+        celestialBodies.add(new CelestialBody(x, y, vx, vy, mass, radius));
+    }
     public void addPlanet(int height, int width) {
         boolean valid = false;
         mainLoop:
