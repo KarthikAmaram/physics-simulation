@@ -35,11 +35,20 @@ public class Simulation {
                     double dist = Math.sqrt(distSq);
 
                     if (dist < 1) continue;
+                    if (dist < (body.radius + otherBody.radius)) {
+                        if (!(toRemove.contains(otherBody))) {
+                            if (body.mass * (Math.sqrt(body.vx * body.vx + body.vy * body.vy)) >
+                                    otherBody.mass * (Math.sqrt(otherBody.vx * otherBody.vx + otherBody.vy * otherBody.vy)) )
+                                toRemove.add(otherBody);
+                            else
+                                toRemove.add(body);
 
-                    double force = (G * otherBody.mass) / distSq;
+                        }
+                    }
+                    double accel = (G * otherBody.mass) / distSq;
 
-                    totalAccX += (dx / dist) * force;
-                    totalAccY += (dy / dist) * force;
+                    totalAccX += (dx / dist) * accel;
+                    totalAccY += (dy / dist) * accel;
                 }
             }
 
@@ -49,6 +58,8 @@ public class Simulation {
             if (Math.abs(body.x) > 2000 || Math.abs(body.y) > 2000) {
                 toRemove.add(body);
             }
+
+
         }
 
         for (CelestialBody body : celestialBodies) {
