@@ -1,19 +1,21 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import javax.swing.*;
 
-public class Renderer extends JPanel {
+public class Renderer extends JPanel implements KeyListener {
     private Simulation sim;
     private Point startPoint;
     private Point endPoint;
     private Point currentPoint;
+    private static CelestialBody leadBody;
 
     public Renderer(Simulation obj) {
         sim = obj;
+        this.setFocusable(true);
+        this.requestFocusInWindow();
+        this.addKeyListener(this);
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(10, 15, 10, 15));
 
@@ -71,6 +73,16 @@ public class Renderer extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        setBackground(Color.black);
+        g.setColor(Color.white);
+
+        leadBody = sim.getCelestialBodies().getFirst();
+        for (CelestialBody b : sim.getCelestialBodies()) {
+            if (b.mass > leadBody.mass) {
+                leadBody = b;
+            }
+        }
+
 
         for (CelestialBody body : sim.getCelestialBodies())
         {
@@ -84,9 +96,12 @@ public class Renderer extends JPanel {
                     lastPoint = p;
                 }
             }
+            if (body == leadBody)
+                g.setColor(new Color(252, 192, 61));
             g.fillOval((int) (body.x - body.radius), (int) (body.y - body.radius), (int) (body.radius * 2),
                     (int) (body.radius * 2));
 
+            g.setColor(Color.white);
         }
 
         if (startPoint != null && currentPoint != null) {
@@ -147,4 +162,16 @@ public class Renderer extends JPanel {
         sim.addPlanet(getHeight(), getWidth());
     }
 
+    @Override
+    public void keyPressed(KeyEvent e) {
+        int key = e.getKeyCode();
+
+        // Clears all planets except the "Sun" (largest body)
+        if (key == KeyEvent.VK_C) {
+            sim.getCelestialBodies().removeIf(p -> p != leadBody);
+        }
+    }
+
+    @Override public void keyReleased(KeyEvent e) {}
+    @Override public void keyTyped(KeyEvent e) {}
 }
