@@ -8,6 +8,8 @@ class CelestialBody {
         this.radius = radius;
         this.color = color;
         this.prevPoints = [];
+        this.ax = 0;
+        this.ay = 0;
     }
 }
 
@@ -21,9 +23,44 @@ const MAX_LENGTH = 500;
 let frameCount = 0;
 let bodies = [];
 
+let startPoint = null;
+let currentPoint = null;
+let endPoint = null;
+let isDragging = false;
+let leadBody = null;
+
 bodies.push(new CelestialBody(400, 400, 0, 0, 50000, 30, 'yellow'));
 bodies.push(new CelestialBody(500, 400, 0, 50, 10, 8, 'cyan'));
 bodies.push(new CelestialBody(300, 400, 0, -58, 10, 8, 'magenta'));
+
+canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    startPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    isDragging = true;
+})
+
+canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+        const rect = canvas.getBoundingClientRect();
+        currentPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+})
+
+canvas.addEventListener('mouseup', (e) => {
+    if (isDragging) {
+        const rect = canvas.getBoundingClientRect();
+        const endPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+        const vx = (startPoint.x - endPoint.x) * 0.1;
+        const vy = (startPoint.y - endPoint.y) * 0.1;
+
+        bodies.push(new CelestialBody(startPoint.x, startPoint.y, vx, vy, 10, 8, 'white'));
+
+        startPoint = null;
+        currentPoint = null;
+        isDragging = false;
+    }
+})
 
 function loop() {
     ctx.fillStyle = 'black';
@@ -33,10 +70,12 @@ function loop() {
     frameCount++;
     let toRemove = new Set();
 
+    if (bodies.length > 0) {
+        leadBody = bodies.reduce((prev, curr) => (curr.mass > prev.mass) ? curr : prev);
+    }
+
     for (let i = 0; i < bodies.length; i++) {
         let body = bodies[i];
-        let totalAccX = 0;
-        let totalAccY = 0;
 
         for (let j = 0; j < bodies.length; j++) {
             if (i === j) continue;
@@ -56,12 +95,9 @@ function loop() {
             }
 
             let accel = (G * other.mass) / distSq;
-            totalAccX += (dx / dist) * accel;
-            totalAccY += (dy / dist) * accel;
+            body.ax += (dx / dist) * accel;
+            body.ay += (dy / dist) * accel;
         }
-
-        body.vx += totalAccX * dt;
-        body.vy += totalAccY * dt;
 
         if (Math.abs(body.x) > 2000 || Math.abs(body.y) > 2000) {
             toRemove.add(body);
@@ -71,6 +107,12 @@ function loop() {
     bodies = bodies.filter(body => !toRemove.has(body));
 
     bodies.forEach(body => {
+        body.vx += body.ax * dt;
+        body.vy += body.ay * dt;
+
+        body.ax = 0;
+        body.ay = 0;
+
         body.x += body.vx * dt;
         body.y += body.vy * dt;
 
@@ -89,11 +131,70 @@ function loop() {
         ctx.stroke();
         ctx.globalAlpha = 1.0;
 
-        ctx.fillStyle = body.color;
+        ctx.fillStyle = (body === leadBody) ? 'yellow' : body.color;
         ctx.beginPath();
         ctx.arc(body.x, body.y, body.radius, 0, Math.PI * 2);
         ctx.fill();
     });
+
+    if (startPoint && currentPoint) {
+        ctx.strokeStyle = 'blue';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(startPoint.x, startPoint.y);
+        ctx.lineTo(currentPoint.x, currentPoint.y);
+        ctx.stroke();
+
+        let ghostX = startPoint.x;
+        let ghostY = startPoint.y;
+        let ghostVX = (startPoint.x - currentPoint.x) * 0.1;
+        let ghostVY = (startPoint.y - currentPoint.y) * 0.1;
+        let ghostDT = 0.005;
+
+        ctx.strokeStyle = 'rgba(255, 120, 0, 0.6)';
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(ghostX, ghostY);
+
+        for (let i = 0; i < 2000; i++) {
+            let totalAccX = 0;
+            let totalAccY = 0;
+
+            bodies.forEach(other => {
+                let dx = other.x - ghostX;
+                let dy = other.y - ghostY;
+                let distSq = dx * dx + dy * dy;
+                let dist = Math.sqrt(distSq);
+
+                if (dist < 1) return;
+
+                let accel = (G * other.mass) / distSq;
+                totalAccX += (dx / dist) * accel;
+                totalAccY += (dy / dist) * accel;
+            });
+
+            ghostVX += totalAccX * ghostDT;
+            ghostVY += totalAccY * ghostDT;
+            ghostX += ghostVX * ghostDT;
+            ghostY += ghostVY * ghostDT;
+
+            if (leadBody) {
+                let dxSun = ghostX - leadBody.x;
+                let dySun = ghostY - leadBody.y;
+                let distToSunSq = dxSun * dxSun + dySun * dySun;
+
+                if (distToSunSq < (leadBody.radius * leadBody.radius)) {
+                    break;
+                }
+            }
+
+            ctx.lineTo(ghostX, ghostY);
+        }
+
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+    }
 
     document.getElementById('planetCount').innerText = `Objects: ${bodies.length}`;
     requestAnimationFrame(loop);
