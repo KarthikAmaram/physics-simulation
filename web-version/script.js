@@ -59,10 +59,10 @@ canvas.addEventListener('mouseup', (e) => {
         const vx = (startPoint.x - endPoint.x) * 0.1;
         const vy = (startPoint.y - endPoint.y) * 0.1;
 
-        let massMultiplier = duration * 0.003;
+        let massMultiplier = duration * 0.009;
         if (massMultiplier < 1) massMultiplier = 1;
 
-        let radiusMultiplier = duration * 0.00025;
+        let radiusMultiplier = duration * 0.00015;
         if (radiusMultiplier < 1) radiusMultiplier = 1;
         bodies.push(new CelestialBody(startPoint.x, startPoint.y, vx, vy, startingMass * massMultiplier,
             startingRadius * radiusMultiplier, 'white'));
@@ -149,6 +149,18 @@ function loop() {
     });
 
     if (startPoint && currentPoint) {
+        let duration = Date.now() - startTime;
+        let radiusMultiplier = duration * 0.00015;
+        if (radiusMultiplier < 1) radiusMultiplier = 1;
+        let previewRadius = startingRadius * radiusMultiplier;
+
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(startPoint.x, startPoint.y, previewRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
         ctx.strokeStyle = 'blue';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -193,8 +205,9 @@ function loop() {
                 let dxSun = ghostX - leadBody.x;
                 let dySun = ghostY - leadBody.y;
                 let distToSunSq = dxSun * dxSun + dySun * dySun;
+                let combinedRadius = leadBody.radius + previewRadius;
 
-                if (distToSunSq < (leadBody.radius * leadBody.radius)) {
+                if (distToSunSq < (combinedRadius * combinedRadius)) {
                     break;
                 }
             }
