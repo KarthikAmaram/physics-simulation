@@ -20,6 +20,8 @@ canvas.height = window.innerHeight;
 
 const G = 5;
 const MAX_LENGTH = 500;
+const startingMass = 10;
+const startingRadius = 8;
 let frameCount = 0;
 let bodies = [];
 
@@ -28,6 +30,7 @@ let currentPoint = null;
 let endPoint = null;
 let isDragging = false;
 let leadBody = null;
+let startTime;
 
 bodies.push(new CelestialBody(400, 400, 0, 0, 50000, 30, 'yellow'));
 bodies.push(new CelestialBody(500, 400, 0, 50, 10, 8, 'cyan'));
@@ -37,6 +40,7 @@ canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     startPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     isDragging = true;
+    startTime = Date.now();
 })
 
 canvas.addEventListener('mousemove', (e) => {
@@ -48,13 +52,20 @@ canvas.addEventListener('mousemove', (e) => {
 
 canvas.addEventListener('mouseup', (e) => {
     if (isDragging) {
+        const duration = Date.now() - startTime;
         const rect = canvas.getBoundingClientRect();
         const endPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
         const vx = (startPoint.x - endPoint.x) * 0.1;
         const vy = (startPoint.y - endPoint.y) * 0.1;
 
-        bodies.push(new CelestialBody(startPoint.x, startPoint.y, vx, vy, 10, 8, 'white'));
+        let massMultiplier = duration * 0.003;
+        if (massMultiplier < 1) massMultiplier = 1;
+
+        let radiusMultiplier = duration * 0.00025;
+        if (radiusMultiplier < 1) radiusMultiplier = 1;
+        bodies.push(new CelestialBody(startPoint.x, startPoint.y, vx, vy, startingMass * massMultiplier,
+            startingRadius * radiusMultiplier, 'white'));
 
         startPoint = null;
         currentPoint = null;
