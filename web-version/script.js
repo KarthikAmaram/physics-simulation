@@ -59,7 +59,7 @@ canvas.addEventListener('mouseup', (e) => {
         const vx = (startPoint.x - endPoint.x) * 0.1;
         const vy = (startPoint.y - endPoint.y) * 0.1;
 
-        let massMultiplier = duration * 0.009;
+        let massMultiplier = duration * 0.03;
         if (massMultiplier < 1) massMultiplier = 1;
 
         let radiusMultiplier = duration * 0.00015;
@@ -219,6 +219,49 @@ function loop() {
         ctx.setLineDash([]);
         ctx.lineWidth = 1;
     }
+
+    let chartX = 50;
+    let chartY = canvas.height - 50;
+    let maxBarHeight = 150;
+    let barWidth = 40;
+    let spacing = 15;
+
+    let tableX = canvas.width - 250;
+    let tableY = 50;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(tableX - 10, tableY - 30, 240, (bodies.length + 1) * 25 + 10);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText("Body", tableX, tableY);
+    ctx.fillText("Mass", tableX + 60, tableY);
+    ctx.fillText("Energy (KE)", tableX + 130, tableY);
+
+    bodies.forEach((body, index) => {
+        let speedSq = body.vx * body.vx + body.vy * body.vy;
+        let ke = 0.5 * body.mass * speedSq;
+
+        let barHeight = ke > 0 ? Math.log10(ke + 1) * 25 : 0;
+        barHeight = Math.min(barHeight, maxBarHeight);
+        let xPos = chartX + (index * (barWidth + spacing));
+
+        ctx.fillStyle = body.color;
+        ctx.fillRect(xPos, chartY, barWidth, -barHeight);
+        ctx.strokeStyle = 'white';
+        ctx.strokeRect(xPos, chartY, barWidth, -barHeight);
+
+        ctx.fillStyle = 'white';
+        ctx.font = '10px Arial';
+        let label = ke > 1000 ? ke.toExponential(1) : Math.round(ke);
+        ctx.fillText(label, xPos, chartY - barHeight - 5);
+        ctx.fillText("#" + (index + 1), xPos + (barWidth/4), chartY + 15);
+
+        let rowY = tableY + 25 + (index * 25);
+        ctx.fillStyle = body.color;
+        ctx.fillText("#" + (index + 1), tableX, rowY);
+        ctx.fillStyle = 'white';
+        ctx.fillText(Math.round(body.mass), tableX + 60, rowY);
+        ctx.fillText(label, tableX + 130, rowY);
+    });
 
     document.getElementById('planetCount').innerText = `Objects: ${bodies.length}`;
     requestAnimationFrame(loop);
