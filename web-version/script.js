@@ -1,15 +1,18 @@
 class CelestialBody {
-    constructor(x, y, vx, vy, mass, radius, color) {
+    constructor(x, y, vx, vy, mass, color) {
         this.x = x;
         this.y = y;
         this.vx = vx;
         this.vy = vy;
         this.mass = mass;
-        this.radius = radius;
         this.color = color;
         this.prevPoints = [];
         this.ax = 0;
         this.ay = 0;
+    }
+
+    get radius() {
+        return 5 + Math.log10(this.mass / 1e24 + 1) * 3;
     }
 }
 
@@ -18,253 +21,195 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const G = 5;
-const MAX_LENGTH = 500;
-const startingMass = 10;
-const startingRadius = 8;
-let frameCount = 0;
-let bodies = [];
+const G = 6.674e-11;
+const SCALE = 5e8;
+const sunMass = 1.989e30;
+const earthMass = 5.97e24;
 
+let bodies = [];
 let startPoint = null;
 let currentPoint = null;
-let endPoint = null;
 let isDragging = false;
-let leadBody = null;
 let startTime;
 
-bodies.push(new CelestialBody(400, 400, 0, 0, 50000, 30, 'yellow'));
-bodies.push(new CelestialBody(500, 400, 0, 50, 10, 8, 'cyan'));
-bodies.push(new CelestialBody(300, 400, 0, -58, 10, 8, 'magenta'));
+bodies.push(new CelestialBody(canvas.width / 2, canvas.height / 2, 0, 0, sunMass, 'yellow'));
 
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     startPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    currentPoint = { x: startPoint.x, y: startPoint.y };
     isDragging = true;
     startTime = Date.now();
-})
+});
 
 canvas.addEventListener('mousemove', (e) => {
     if (isDragging) {
         const rect = canvas.getBoundingClientRect();
         currentPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
-})
+});
 
 canvas.addEventListener('mouseup', (e) => {
     if (isDragging) {
         const duration = Date.now() - startTime;
         const rect = canvas.getBoundingClientRect();
-        const endPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        const endX = e.clientX - rect.left;
+        const endY = e.clientY - rect.top;
 
-        const vx = (startPoint.x - endPoint.x) * 0.1;
-        const vy = (startPoint.y - endPoint.y) * 0.1;
+        let mMult = 1 + (duration / 1000) ** 2;
+        let finalMass = earthMass * mMult;
 
-        let massMultiplier = duration * 0.03;
-        if (massMultiplier < 1) massMultiplier = 1;
+        const vx = (startPoint.x - endX) * 250;
+        const vy = (startPoint.y - endY) * 250;
 
-        let radiusMultiplier = duration * 0.00015;
-        if (radiusMultiplier < 1) radiusMultiplier = 1;
-        bodies.push(new CelestialBody(startPoint.x, startPoint.y, vx, vy, startingMass * massMultiplier,
-            startingRadius * radiusMultiplier, 'white'));
+        bodies.push(new CelestialBody(startPoint.x, startPoint.y, vx, vy, finalMass, 'white'));
 
         startPoint = null;
         currentPoint = null;
         isDragging = false;
     }
-})
+});
 
 function loop() {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    let dt = 1.0 / 60;
-    frameCount++;
+    let dt = 6000;
     let toRemove = new Set();
 
-    if (bodies.length > 0) {
-        leadBody = bodies.reduce((prev, curr) => (curr.mass > prev.mass) ? curr : prev);
-    }
-
     for (let i = 0; i < bodies.length; i++) {
-        let body = bodies[i];
-
+        let b = bodies[i];
         for (let j = 0; j < bodies.length; j++) {
             if (i === j) continue;
             let other = bodies[j];
 
-            let dx = other.x - body.x;
-            let dy = other.y - body.y;
-            let distSq = dx * dx + dy * dy;
-            let dist = Math.sqrt(distSq);
+            let dx = (other.x - b.x) * SCALE;
+            let dy = (other.y - b.y) * SCALE;
+            let dSq = dx * dx + dy * dy;
+            let d = Math.sqrt(dSq);
 
-            if (dist < 1) continue;
-
-            if (dist < (body.radius + other.radius)) {
-                let p1 = body.mass * Math.sqrt(body.vx ** 2 + body.vy ** 2);
-                let p2 = other.mass * Math.sqrt(other.vx ** 2 + other.vy ** 2);
-                toRemove.add(p1 > p2 ? other : body);
+            if (d < (b.radius + other.radius) * SCALE) {
+                toRemove.add(b.mass < other.mass ? b : other);
+                continue;
             }
 
-            let accel = (G * other.mass) / distSq;
-            body.ax += (dx / dist) * accel;
-            body.ay += (dy / dist) * accel;
-        }
-
-        if (Math.abs(body.x) > 2000 || Math.abs(body.y) > 2000) {
-            toRemove.add(body);
+            let f = (G * other.mass) / dSq;
+            b.ax += (dx / d) * f;
+            b.ay += (dy / d) * f;
         }
     }
 
-    bodies = bodies.filter(body => !toRemove.has(body));
+    bodies = bodies.filter(b => !toRemove.has(b));
 
-    bodies.forEach(body => {
-        body.vx += body.ax * dt;
-        body.vy += body.ay * dt;
+    bodies.forEach(b => {
+        b.vx += b.ax * dt;
+        b.vy += b.ay * dt;
+        b.x += (b.vx * dt) / SCALE;
+        b.y += (b.vy * dt) / SCALE;
+        b.ax = 0; b.ay = 0;
 
-        body.ax = 0;
-        body.ay = 0;
+        b.prevPoints.push({x: b.x, y: b.y});
+        if (b.prevPoints.length > 1000) b.prevPoints.shift();
 
-        body.x += body.vx * dt;
-        body.y += body.vy * dt;
-
-        if (frameCount % 5 === 0) {
-            body.prevPoints.push({x: body.x, y: body.y});
-            if (body.prevPoints.length > MAX_LENGTH) body.prevPoints.shift();
-        }
-
-        ctx.strokeStyle = body.color;
-        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = b.color;
+        ctx.globalAlpha = 0.2;
         ctx.beginPath();
-        body.prevPoints.forEach((p, index) => {
-            if (index === 0) ctx.moveTo(p.x, p.y);
-            else ctx.lineTo(p.x, p.y);
-        });
+        b.prevPoints.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
         ctx.stroke();
         ctx.globalAlpha = 1.0;
 
-        ctx.fillStyle = (body === leadBody) ? 'yellow' : body.color;
+        ctx.fillStyle = b.mass >= sunMass * 0.9 ? 'yellow' : b.color;
         ctx.beginPath();
-        ctx.arc(body.x, body.y, body.radius, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
         ctx.fill();
     });
 
     if (startPoint && currentPoint) {
         let duration = Date.now() - startTime;
-        let radiusMultiplier = duration * 0.00015;
-        if (radiusMultiplier < 1) radiusMultiplier = 1;
-        let previewRadius = startingRadius * radiusMultiplier;
+        let mMult = 1 + (duration / 1000) ** 2;
+        let gMass = earthMass * mMult;
+        let gRadius = 5 + Math.log10(gMass / 1e24 + 1) * 3;
 
-        ctx.globalAlpha = 0.5;
+        ctx.globalAlpha = 0.4;
         ctx.fillStyle = 'white';
         ctx.beginPath();
-        ctx.arc(startPoint.x, startPoint.y, previewRadius, 0, Math.PI * 2);
+        ctx.arc(startPoint.x, startPoint.y, gRadius, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1.0;
 
-        ctx.strokeStyle = 'blue';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#00ccff';
+        ctx.setLineDash([]);
         ctx.beginPath();
         ctx.moveTo(startPoint.x, startPoint.y);
         ctx.lineTo(currentPoint.x, currentPoint.y);
         ctx.stroke();
 
-        let ghostX = startPoint.x;
-        let ghostY = startPoint.y;
-        let ghostVX = (startPoint.x - currentPoint.x) * 0.1;
-        let ghostVY = (startPoint.y - currentPoint.y) * 0.1;
-        let ghostDT = 0.005;
+        let gX = startPoint.x, gY = startPoint.y;
+        let gVX = (startPoint.x - currentPoint.x) * 250;
+        let gVY = (startPoint.y - currentPoint.y) * 250;
 
-        ctx.strokeStyle = 'rgba(255, 120, 0, 0.6)';
+        ctx.strokeStyle = 'rgba(255, 165, 0, 0.6)';
         ctx.setLineDash([5, 5]);
         ctx.beginPath();
-        ctx.moveTo(ghostX, ghostY);
+        ctx.moveTo(gX, gY);
 
-        for (let i = 0; i < 2000; i++) {
-            let totalAccX = 0;
-            let totalAccY = 0;
-
-            bodies.forEach(other => {
-                let dx = other.x - ghostX;
-                let dy = other.y - ghostY;
-                let distSq = dx * dx + dy * dy;
-                let dist = Math.sqrt(distSq);
-
-                if (dist < 1) return;
-
-                let accel = (G * other.mass) / distSq;
-                totalAccX += (dx / dist) * accel;
-                totalAccY += (dy / dist) * accel;
+        for (let i = 0; i < 4000; i++) {
+            let tx = 0, ty = 0;
+            bodies.forEach(o => {
+                let dx = (o.x - gX) * SCALE, dy = (o.y - gY) * SCALE;
+                let d2 = dx * dx + dy * dy;
+                let d = Math.sqrt(d2);
+                if (d < 1) return;
+                tx += (dx / d) * (G * o.mass / d2);
+                ty += (dy / d) * (G * o.mass / d2);
             });
+            gVX += tx * dt; gVY += ty * dt;
+            gX += (gVX * dt) / SCALE; gY += (gVY * dt) / SCALE;
+            ctx.lineTo(gX, gY);
 
-            ghostVX += totalAccX * ghostDT;
-            ghostVY += totalAccY * ghostDT;
-            ghostX += ghostVX * ghostDT;
-            ghostY += ghostVY * ghostDT;
-
-            if (leadBody) {
-                let dxSun = ghostX - leadBody.x;
-                let dySun = ghostY - leadBody.y;
-                let distToSunSq = dxSun * dxSun + dySun * dySun;
-                let combinedRadius = leadBody.radius + previewRadius;
-
-                if (distToSunSq < (combinedRadius * combinedRadius)) {
-                    break;
-                }
-            }
-
-            ctx.lineTo(ghostX, ghostY);
+            if (Math.abs(gX) > canvas.width * 5 || Math.abs(gY) > canvas.height * 5) break;
         }
-
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.lineWidth = 1;
     }
 
-    let chartX = 50;
-    let chartY = canvas.height - 50;
-    let maxBarHeight = 150;
-    let barWidth = 40;
-    let spacing = 15;
-
-    let tableX = canvas.width - 250;
-    let tableY = 50;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.fillRect(tableX - 10, tableY - 30, 240, (bodies.length + 1) * 25 + 10);
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 14px Arial';
-    ctx.fillText("Body", tableX, tableY);
-    ctx.fillText("Mass", tableX + 60, tableY);
-    ctx.fillText("Energy (KE)", tableX + 130, tableY);
-
-    bodies.forEach((body, index) => {
-        let speedSq = body.vx * body.vx + body.vy * body.vy;
-        let ke = 0.5 * body.mass * speedSq;
-
-        let barHeight = ke > 0 ? Math.log10(ke + 1) * 25 : 0;
-        barHeight = Math.min(barHeight, maxBarHeight);
-        let xPos = chartX + (index * (barWidth + spacing));
-
-        ctx.fillStyle = body.color;
-        ctx.fillRect(xPos, chartY, barWidth, -barHeight);
-        ctx.strokeStyle = 'white';
-        ctx.strokeRect(xPos, chartY, barWidth, -barHeight);
-
-        ctx.fillStyle = 'white';
-        ctx.font = '10px Arial';
-        let label = ke > 1000 ? ke.toExponential(1) : Math.round(ke);
-        ctx.fillText(label, xPos, chartY - barHeight - 5);
-        ctx.fillText("#" + (index + 1), xPos + (barWidth/4), chartY + 15);
-
-        let rowY = tableY + 25 + (index * 25);
-        ctx.fillStyle = body.color;
-        ctx.fillText("#" + (index + 1), tableX, rowY);
-        ctx.fillStyle = 'white';
-        ctx.fillText(Math.round(body.mass), tableX + 60, rowY);
-        ctx.fillText(label, tableX + 130, rowY);
-    });
-
-    document.getElementById('planetCount').innerText = `Objects: ${bodies.length}`;
+    renderUI();
     requestAnimationFrame(loop);
+}
+
+function renderUI() {
+    let tableX = canvas.width - 320;
+    let tableY = 40;
+    let chartX = 40;
+    let chartY = canvas.height - 40;
+
+    let col1 = 0;
+    let col2 = 60;
+    let col3 = 160;
+
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText("BODY", tableX + col1, tableY);
+    ctx.fillText("MASS (kg)", tableX + col2, tableY);
+    ctx.fillText("ENERGY (J)", tableX + col3, tableY);
+    ctx.fillRect(tableX, tableY + 5, 300, 1);
+
+    bodies.forEach((b, i) => {
+        let ke = 0.5 * b.mass * (b.vx**2 + b.vy**2);
+        let rowY = tableY + 25 + (i * 20);
+
+        ctx.fillStyle = b.color;
+        ctx.fillText(`#${i+1}`, tableX + col1, rowY);
+        ctx.fillStyle = 'white';
+        ctx.fillText(b.mass.toExponential(2), tableX + col2, rowY);
+        ctx.fillText(ke.toExponential(2), tableX + col3, rowY);
+
+        let barH = Math.max(2, Math.log10(ke + 1) * 3 - 60);
+        ctx.fillStyle = b.color;
+        ctx.fillRect(chartX + (i * 35), chartY, 25, -barH);
+        ctx.strokeStyle = 'white';
+        ctx.strokeRect(chartX + (i * 35), chartY, 25, -barH);
+    });
 }
 
 loop();
