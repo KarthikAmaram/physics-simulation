@@ -32,7 +32,18 @@ let currentPoint = null;
 let isDragging = false;
 let startTime;
 
-bodies.push(new CelestialBody(canvas.width / 2, canvas.height / 2, 0, 0, sunMass, 'yellow'));
+const sunX = canvas.width / 2;
+const sunY = canvas.height / 2;
+bodies.push(new CelestialBody(sunX, sunY, 0, 0, sunMass, 'yellow'));
+
+const dist1 = 150;
+const vCirc = Math.sqrt((G * sunMass) / (dist1 * SCALE));
+bodies.push(new CelestialBody(sunX + dist1, sunY, 0, vCirc, earthMass, 'cyan'));
+
+const dist2 = 250;
+const vEllip = Math.sqrt((G * sunMass) / (dist2 * SCALE)) * 0.75;
+bodies.push(new CelestialBody(sunX - dist2, sunY, 0, -vEllip, earthMass, 'magenta'));
+
 
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -58,11 +69,11 @@ canvas.addEventListener('mouseup', (e) => {
 
         let mMult = 1 + (duration / 1000) ** 2;
         let finalMass = earthMass * mMult;
-
         const vx = (startPoint.x - endX) * 250;
         const vy = (startPoint.y - endY) * 250;
+        const randomColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
 
-        bodies.push(new CelestialBody(startPoint.x, startPoint.y, vx, vy, finalMass, 'white'));
+        bodies.push(new CelestialBody(startPoint.x, startPoint.y, vx, vy, finalMass, randomColor));
 
         startPoint = null;
         currentPoint = null;
@@ -166,7 +177,6 @@ function loop() {
             gVX += tx * dt; gVY += ty * dt;
             gX += (gVX * dt) / SCALE; gY += (gVY * dt) / SCALE;
             ctx.lineTo(gX, gY);
-
             if (Math.abs(gX) > canvas.width * 5 || Math.abs(gY) > canvas.height * 5) break;
         }
         ctx.stroke();
@@ -182,10 +192,7 @@ function renderUI() {
     let tableY = 40;
     let chartX = 40;
     let chartY = canvas.height - 40;
-
-    let col1 = 0;
-    let col2 = 60;
-    let col3 = 160;
+    let col1 = 0, col2 = 60, col3 = 160;
 
     ctx.fillStyle = 'white';
     ctx.font = 'bold 12px monospace';
@@ -197,7 +204,6 @@ function renderUI() {
     bodies.forEach((b, i) => {
         let ke = 0.5 * b.mass * (b.vx**2 + b.vy**2);
         let rowY = tableY + 25 + (i * 20);
-
         ctx.fillStyle = b.color;
         ctx.fillText(`#${i+1}`, tableX + col1, rowY);
         ctx.fillStyle = 'white';
