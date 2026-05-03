@@ -44,6 +44,26 @@ const dist2 = 250;
 const vEllip = Math.sqrt((G * sunMass) / (dist2 * SCALE)) * 0.75;
 bodies.push(new CelestialBody(sunX - dist2, sunY, 0, -vEllip, earthMass, 'magenta'));
 
+window.addEventListener('resize', () => {
+    const oldWidth = canvas.width;
+    const oldHeight = canvas.height;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const offsetX = (canvas.width - oldWidth) / 2;
+    const offsetY = (canvas.height - oldHeight) / 2;
+
+    bodies.forEach(b => {
+        b.x += offsetX;
+        b.y += offsetY;
+
+        b.prevPoints.forEach(p => {
+            p.x += offsetX;
+            p.y += offsetY;
+        });
+    });
+});
 
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -123,7 +143,7 @@ function loop() {
         if (b.prevPoints.length > 1000) b.prevPoints.shift();
 
         ctx.strokeStyle = b.color;
-        ctx.globalAlpha = 0.2;
+        ctx.globalAlpha = 0.4;
         ctx.beginPath();
         b.prevPoints.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
         ctx.stroke();
@@ -198,7 +218,7 @@ function renderUI() {
     ctx.font = 'bold 12px monospace';
     ctx.fillText("BODY", tableX + col1, tableY);
     ctx.fillText("MASS (kg)", tableX + col2, tableY);
-    ctx.fillText("ENERGY (J)", tableX + col3, tableY);
+    ctx.fillText("KINETIC ENERGY (J)", tableX + col3, tableY);
     ctx.fillRect(tableX, tableY + 5, 300, 1);
 
     bodies.forEach((b, i) => {
